@@ -138,8 +138,10 @@ resource "aws_iam_group_policy_attachment" "attach_s3_read_policy" {
 }
 
 resource "aws_cloudtrail" "cdi_splunk_cloudtrail" {
+  depends_on = [aws_s3_bucket_policy.example]
   name                          = "Autotagging"
   s3_bucket_name                = aws_s3_bucket.S3BucketForCloudTrailCloudTrail.id
+  s3_key_prefix                 = ""
   enable_log_file_validation    = true
   include_global_service_events = true
   is_multi_region_trail         = false
@@ -170,12 +172,18 @@ data "aws_iam_policy_document" "S3BucketPolicy" {
       identifiers = ["cloudtrail.amazonaws.com"]
     }
     actions   = ["s3:PutObject"]
-    resources = ["${aws_s3_bucket.S3BucketForCloudTrailCloudTrail.arn}/*"]
+    resources = ["${aws_s3_bucket.S3BucketForCloudTrailCloudTrail.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
   }
 }
 
 
 resource "aws_s3_bucket_policy" "example" {
+  depends_on = [aws_s3_bucket.S3BucketForCloudTrailCloudTrail]
   bucket = aws_s3_bucket.S3BucketForCloudTrailCloudTrail.id
   policy = data.aws_iam_policy_document.S3BucketPolicy.json
 }
