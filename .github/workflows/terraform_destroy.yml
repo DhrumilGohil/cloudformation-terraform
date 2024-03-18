@@ -1,4 +1,4 @@
-name: 'Terraform Create'
+name: 'Terraform Destroy'
 
 on:
   push:
